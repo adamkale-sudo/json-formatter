@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Formatter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 1.5rem; }
+    h1 { font-size: 20px; font-weight: 500; margin-bottom: 1rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+    button { font-size: 13px; padding: 7px 16px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #fff; }
+    button:hover { background: #eee; }
+    .primary { background: #1a56db !important; color: #fff !important; border-color: transparent !important; }
+    .indent-wrap { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    select { font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid #ccc; }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .panels { grid-template-columns: 1fr; } }
+    label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+    textarea { width: 100%; height: 400px; font-family: monospace; font-size: 13px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; }
+    #output { background: #f9f9f9; }
+    .status { margin-top: 6px; font-size: 12px; min-height: 16px; }
+    .ok { color: #166534; }
+    .err { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <h1>JSON Formatter</h1>
+  <div class="toolbar">
+    <button class="primary" onclick="fmt()">Format / Prettify</button>
+    <button onclick="mini()">Minify</button>
+    <button onclick="val()">Validate</button>
+    <button onclick="clr()">Clear</button>
+    <button onclick="cpy()">Copy output</button>
+    <div class="indent-wrap">
+      Indent:
+      <select id="ind">
+        <option value="2">2 spaces</option>
+        <option value="4">4 spaces</option>
+        <option value="tab">Tab</option>
+      </select>
+    </div>
+  </div>
+  <div class="panels">
+    <div>
+      <label>Input</label>
+      <textarea id="inp" placeholder="Paste your JSON here..."></textarea>
+      <div class="status" id="st"></div>
+    </div>
+    <div>
+      <label>Output</label>
+      <textarea id="out" readonly placeholder="Result appears here..."></textarea>
+    </div>
+  </div>
+  <script>
+    function ind() { var v = document.getElementById('ind').value; return v === 'tab' ? '\t' : parseInt(v); }
+    function st(m, c) { var e = document.getElementById('st'); e.textContent = m; e.className = 'status ' + (c || ''); }
+    function fmt() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { document.getElementById('out').value = JSON.stringify(JSON.parse(r), null, ind()); st('Formatted successfully.', 'ok'); } catch(e) { document.getElementById('out').value = ''; st('Error: ' + e.message, 'err'); } }
+    function mini() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { document.getElementById('out').value = JSON.stringify(JSON.parse(r)); st('Minified.', 'ok'); } catch(e) { document.getElementById('out').value = ''; st('Error: ' + e.message, 'err'); } }
+    function val() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { JSON.parse(r); st('Valid JSON.', 'ok'); } catch(e) { st('Invalid: ' + e.message, 'err'); } }
+    function clr() { document.getElementById('inp').value = ''; document.getElementById('out').value = ''; st(''); }
+    function cpy() { var v = document.getElementById('out').value; if (!v) { st('Nothing to copy.'); return; } navigator.clipboard.writeText(v).then(function() { st('Copied!', 'ok'); }); }
+  </script>
+</body>
+</html>
