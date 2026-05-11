@@ -1,64 +1,473 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>JSON Formatter</title>
   <style>
+    :root[data-theme="dark"] {
+      --bg: #1e1e1e;
+      --surface: #252526;
+      --surface2: #2d2d2d;
+      --border: #3e3e3e;
+      --text: #d4d4d4;
+      --text-muted: #858585;
+      --btn-bg: #2d2d2d;
+      --btn-border: #4a4a4a;
+      --btn-hover: #3a3a3a;
+      --editor-bg: #1e1e1e;
+      --editor-border: #3e3e3e;
+      --status-ok: #4ec9b0;
+      --status-err: #f44747;
+      --primary: #0e7afe;
+      --primary-hover: #1a8aff;
+      --syn-key: #9cdcfe;
+      --syn-str: #ce9178;
+      --syn-num: #b5cea8;
+      --syn-bool: #569cd6;
+      --syn-null: #569cd6;
+      --syn-punct: #d4d4d4;
+      --scrollbar: #424242;
+      --scrollbar-hover: #555;
+      --tag-bg: #37373d;
+    }
+    :root[data-theme="light"] {
+      --bg: #f3f3f3;
+      --surface: #ffffff;
+      --surface2: #f5f5f5;
+      --border: #e0e0e0;
+      --text: #1e1e1e;
+      --text-muted: #6e6e6e;
+      --btn-bg: #ffffff;
+      --btn-border: #cecece;
+      --btn-hover: #ebebeb;
+      --editor-bg: #ffffff;
+      --editor-border: #d4d4d4;
+      --status-ok: #0e7a4e;
+      --status-err: #c5200c;
+      --primary: #0065bd;
+      --primary-hover: #0078d4;
+      --syn-key: #0070c1;
+      --syn-str: #a31515;
+      --syn-num: #098658;
+      --syn-bool: #0000ff;
+      --syn-null: #0000ff;
+      --syn-punct: #1e1e1e;
+      --scrollbar: #c1c1c1;
+      --scrollbar-hover: #a8a8a8;
+      --tag-bg: #e8e8e8;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 1.5rem; }
-    h1 { font-size: 20px; font-weight: 500; margin-bottom: 1rem; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
-    button { font-size: 13px; padding: 7px 16px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #fff; }
-    button:hover { background: #eee; }
-    .primary { background: #1a56db !important; color: #fff !important; border-color: transparent !important; }
-    .indent-wrap { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; }
-    select { font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid #ccc; }
-    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 600px) { .panels { grid-template-columns: 1fr; } }
-    label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
-    textarea { width: 100%; height: 400px; font-family: monospace; font-size: 13px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; }
-    #output { background: #f9f9f9; }
-    .status { margin-top: 6px; font-size: 12px; min-height: 16px; }
-    .ok { color: #166534; }
-    .err { color: #b91c1c; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1.25rem 1.5rem 2rem;
+      min-height: 100vh;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.1rem;
+    }
+    .header h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--tag-bg);
+      color: var(--text-muted);
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    button {
+      font-size: 12.5px;
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 5px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--text);
+      font-family: inherit;
+      transition: background 0.1s;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--btn-hover); }
+    button:active { opacity: 0.8; }
+
+    .btn-primary {
+      background: var(--primary) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      font-weight: 500;
+    }
+    .btn-primary:hover { background: var(--primary-hover) !important; }
+
+    .btn-ghost {
+      border-color: transparent;
+      background: transparent;
+    }
+    .btn-ghost:hover { background: var(--btn-hover); }
+
+    .toolbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .indent-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    select {
+      font-size: 12.5px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--text);
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 2px;
+    }
+
+    /* ── Panels ── */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 650px) { .panels { grid-template-columns: 1fr; } }
+
+    .panel { display: flex; flex-direction: column; gap: 4px; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .panel-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex: 1;
+    }
+    .panel-actions { display: flex; gap: 4px; }
+    .panel-actions button {
+      font-size: 11.5px;
+      padding: 4px 10px;
+    }
+
+    /* ── Input textarea ── */
+    textarea {
+      width: 100%;
+      height: 420px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px 14px;
+      border: 1px solid var(--editor-border);
+      border-radius: 6px;
+      resize: vertical;
+      background: var(--editor-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea::placeholder { color: var(--text-muted); }
+    textarea:focus { border-color: var(--primary); }
+
+    /* ── Output editor (contenteditable) ── */
+    #out {
+      width: 100%;
+      height: 420px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px 14px;
+      border: 1px solid var(--editor-border);
+      border-radius: 6px;
+      background: var(--editor-bg);
+      color: var(--syn-punct);
+      overflow: auto;
+      white-space: pre;
+      outline: none;
+      cursor: text;
+      transition: border-color 0.15s;
+    }
+    #out:focus { border-color: var(--primary); }
+    #out:empty::before {
+      content: 'Result appears here…';
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* ── Syntax colours ── */
+    .jk { color: var(--syn-key); }
+    .js { color: var(--syn-str); }
+    .jn { color: var(--syn-num); }
+    .jb { color: var(--syn-bool); }
+    .jnl { color: var(--syn-null); }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+    /* ── Status ── */
+    .status {
+      font-size: 11.5px;
+      min-height: 18px;
+      color: var(--text-muted);
+      padding-left: 2px;
+    }
+    .ok  { color: var(--status-ok) !important; }
+    .err { color: var(--status-err) !important; }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+    }
+    .theme-toggle:hover { background: var(--btn-hover); color: var(--text); }
+    .theme-icon { font-size: 14px; line-height: 1; }
   </style>
 </head>
 <body>
-  <h1>JSON Formatter</h1>
+
+  <div class="header">
+    <h1>JSON Formatter</h1>
+  </div>
+
   <div class="toolbar">
-    <button class="primary" onclick="fmt()">Format / Prettify</button>
+    <button class="btn-primary" onclick="fmt()">Format</button>
     <button onclick="mini()">Minify</button>
     <button onclick="val()">Validate</button>
     <button onclick="clr()">Clear</button>
-    <button onclick="cpy()">Copy output</button>
+    <div class="divider"></div>
     <div class="indent-wrap">
-      Indent:
+      Indent
       <select id="ind">
         <option value="2">2 spaces</option>
         <option value="4">4 spaces</option>
         <option value="tab">Tab</option>
       </select>
     </div>
+    <div class="toolbar-right">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+        <span class="theme-icon" id="themeIcon">☀️</span>
+        <span id="themeLabel">Light</span>
+      </button>
+    </div>
   </div>
+
   <div class="panels">
-    <div>
-      <label>Input</label>
-      <textarea id="inp" placeholder="Paste your JSON here..."></textarea>
+    <!-- Input -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label">Input</span>
+        <div class="panel-actions">
+          <button onclick="cpyInp()">Copy</button>
+        </div>
+      </div>
+      <textarea id="inp" placeholder="Paste your JSON here…" spellcheck="false"></textarea>
       <div class="status" id="st"></div>
     </div>
-    <div>
-      <label>Output</label>
-      <textarea id="out" readonly placeholder="Result appears here..."></textarea>
+
+    <!-- Output -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label">Output <span style="font-weight:400;text-transform:none;letter-spacing:0">(editable)</span></span>
+        <div class="panel-actions">
+          <button onclick="rehighlight()">Re-highlight</button>
+          <button onclick="cpyOut()">Copy</button>
+          <button onclick="miniOut()">Minify &amp; Copy</button>
+        </div>
+      </div>
+      <div id="out" contenteditable="true" spellcheck="false"></div>
+      <div class="status" id="st2"></div>
     </div>
   </div>
+
   <script>
-    function ind() { var v = document.getElementById('ind').value; return v === 'tab' ? '\t' : parseInt(v); }
-    function st(m, c) { var e = document.getElementById('st'); e.textContent = m; e.className = 'status ' + (c || ''); }
-    function fmt() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { document.getElementById('out').value = JSON.stringify(JSON.parse(r), null, ind()); st('Formatted successfully.', 'ok'); } catch(e) { document.getElementById('out').value = ''; st('Error: ' + e.message, 'err'); } }
-    function mini() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { document.getElementById('out').value = JSON.stringify(JSON.parse(r)); st('Minified.', 'ok'); } catch(e) { document.getElementById('out').value = ''; st('Error: ' + e.message, 'err'); } }
-    function val() { var r = document.getElementById('inp').value.trim(); if (!r) { st('Paste JSON first.'); return; } try { JSON.parse(r); st('Valid JSON.', 'ok'); } catch(e) { st('Invalid: ' + e.message, 'err'); } }
-    function clr() { document.getElementById('inp').value = ''; document.getElementById('out').value = ''; st(''); }
-    function cpy() { var v = document.getElementById('out').value; if (!v) { st('Nothing to copy.'); return; } navigator.clipboard.writeText(v).then(function() { st('Copied!', 'ok'); }); }
+    // ── Helpers ──────────────────────────────────────────────
+    function getInd() {
+      var v = document.getElementById('ind').value;
+      return v === 'tab' ? '\t' : parseInt(v);
+    }
+    function setStatus(id, msg, cls) {
+      var el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = 'status ' + (cls || '');
+    }
+    function outText() {
+      // innerText preserves newlines from pre-like elements
+      return document.getElementById('out').innerText;
+    }
+
+    // ── Syntax highlighter ───────────────────────────────────
+    function highlight(json) {
+      var safe = json
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      return safe.replace(
+        /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        function(match) {
+          var cls;
+          if (/^"/.test(match)) {
+            cls = /:$/.test(match) ? 'jk' : 'js';
+          } else if (match === 'true' || match === 'false') {
+            cls = 'jb';
+          } else if (match === 'null') {
+            cls = 'jnl';
+          } else {
+            cls = 'jn';
+          }
+          return '<span class="' + cls + '">' + match + '</span>';
+        }
+      );
+    }
+
+    function setOut(html) {
+      document.getElementById('out').innerHTML = html;
+    }
+
+    // ── Actions ──────────────────────────────────────────────
+    function fmt() {
+      var r = document.getElementById('inp').value.trim();
+      if (!r) { setStatus('st', 'Paste JSON first.'); return; }
+      try {
+        var pretty = JSON.stringify(JSON.parse(r), null, getInd());
+        setOut(highlight(pretty));
+        setStatus('st', 'Formatted.', 'ok');
+        setStatus('st2', '');
+      } catch(e) {
+        setOut('');
+        setStatus('st', 'Error: ' + e.message, 'err');
+      }
+    }
+
+    function mini() {
+      var r = document.getElementById('inp').value.trim();
+      if (!r) { setStatus('st', 'Paste JSON first.'); return; }
+      try {
+        setOut(highlight(JSON.stringify(JSON.parse(r))));
+        setStatus('st', 'Minified.', 'ok');
+        setStatus('st2', '');
+      } catch(e) {
+        setOut('');
+        setStatus('st', 'Error: ' + e.message, 'err');
+      }
+    }
+
+    function val() {
+      var r = document.getElementById('inp').value.trim();
+      if (!r) { setStatus('st', 'Paste JSON first.'); return; }
+      try {
+        JSON.parse(r);
+        setStatus('st', '✓ Valid JSON.', 'ok');
+      } catch(e) {
+        setStatus('st', 'Invalid: ' + e.message, 'err');
+      }
+    }
+
+    function clr() {
+      document.getElementById('inp').value = '';
+      setOut('');
+      setStatus('st', '');
+      setStatus('st2', '');
+    }
+
+    function rehighlight() {
+      var t = outText().trim();
+      if (!t) { setStatus('st2', 'Nothing to highlight.'); return; }
+      try {
+        var pretty = JSON.stringify(JSON.parse(t), null, getInd());
+        setOut(highlight(pretty));
+        setStatus('st2', 'Re-highlighted.', 'ok');
+      } catch(e) {
+        setStatus('st2', 'Invalid JSON: ' + e.message, 'err');
+      }
+    }
+
+    function cpyInp() {
+      var v = document.getElementById('inp').value;
+      if (!v.trim()) { setStatus('st', 'Nothing to copy.'); return; }
+      navigator.clipboard.writeText(v).then(function() { setStatus('st', 'Input copied.', 'ok'); });
+    }
+
+    function cpyOut() {
+      var v = outText();
+      if (!v.trim()) { setStatus('st2', 'Nothing to copy.'); return; }
+      navigator.clipboard.writeText(v).then(function() { setStatus('st2', 'Copied!', 'ok'); });
+    }
+
+    function miniOut() {
+      var v = outText().trim();
+      if (!v) { setStatus('st2', 'Nothing to minify.'); return; }
+      try {
+        var m = JSON.stringify(JSON.parse(v));
+        navigator.clipboard.writeText(m).then(function() { setStatus('st2', 'Minified & copied!', 'ok'); });
+      } catch(e) {
+        setStatus('st2', 'Invalid JSON: ' + e.message, 'err');
+      }
+    }
+
+    // ── Theme ────────────────────────────────────────────────
+    var dark = true;
+    function toggleTheme() {
+      dark = !dark;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      document.getElementById('themeIcon').textContent  = dark ? '☀️' : '🌙';
+      document.getElementById('themeLabel').textContent = dark ? 'Light' : 'Dark';
+    }
+
+    // Format on Ctrl/Cmd+Enter
+    document.getElementById('inp').addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); fmt(); }
+    });
   </script>
 </body>
 </html>
