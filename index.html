@@ -341,43 +341,31 @@
       el.className = 'status ' + (cls || '');
     }
     function outText() {
-      var el = document.getElementById('out');
-      // Use a clone to safely extract plain text from highlighted HTML
-      var tmp = document.createElement('div');
-      tmp.innerHTML = el.innerHTML;
-      // Replace block elements with newlines
-      tmp.querySelectorAll('div, p, br').forEach(function(node) {
-        node.before('\n');
-      });
-      return (tmp.innerText || tmp.textContent || '');
+      // textContent strips span tags — they are cosmetic only
+      return document.getElementById('out').textContent || '';
     }
 
     function copyText(text, statusId) {
       if (!text.trim()) { setStatus(statusId, 'Nothing to copy.'); return; }
-      // Try modern clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text)
-          .then(function() { setStatus(statusId, 'Copied!', 'ok'); })
-          .catch(function() { fallbackCopy(text, statusId); });
-      } else {
-        fallbackCopy(text, statusId);
-      }
-    }
-
-    function fallbackCopy(text, statusId) {
+      // execCommand works on file:// and https:// everywhere
       var ta = document.createElement('textarea');
       ta.value = text;
-      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
       document.body.appendChild(ta);
-      ta.focus();
       ta.select();
-      try {
-        document.execCommand('copy');
-        setStatus(statusId, 'Copied!', 'ok');
-      } catch(e) {
-        setStatus(statusId, 'Copy failed — please use Ctrl+C.', 'err');
-      }
+      ta.setSelectionRange(0, ta.value.length);
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch(e) {}
       document.body.removeChild(ta);
+      if (ok) {
+        setStatus(statusId, 'Copied!', 'ok');
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(function() { setStatus(statusId, 'Copied!', 'ok'); })
+          .catch(function() { setStatus(statusId, 'Copy failed — try Ctrl+A Ctrl+C.', 'err'); });
+      } else {
+        setStatus(statusId, 'Copy failed — try Ctrl+A Ctrl+C.', 'err');
+      }
     }
 
     // ── Syntax highlighter ───────────────────────────────────
