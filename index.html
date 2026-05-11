@@ -341,8 +341,43 @@
       el.className = 'status ' + (cls || '');
     }
     function outText() {
-      // innerText preserves newlines from pre-like elements
-      return document.getElementById('out').innerText;
+      var el = document.getElementById('out');
+      // Use a clone to safely extract plain text from highlighted HTML
+      var tmp = document.createElement('div');
+      tmp.innerHTML = el.innerHTML;
+      // Replace block elements with newlines
+      tmp.querySelectorAll('div, p, br').forEach(function(node) {
+        node.before('\n');
+      });
+      return (tmp.innerText || tmp.textContent || '');
+    }
+
+    function copyText(text, statusId) {
+      if (!text.trim()) { setStatus(statusId, 'Nothing to copy.'); return; }
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(function() { setStatus(statusId, 'Copied!', 'ok'); })
+          .catch(function() { fallbackCopy(text, statusId); });
+      } else {
+        fallbackCopy(text, statusId);
+      }
+    }
+
+    function fallbackCopy(text, statusId) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        setStatus(statusId, 'Copied!', 'ok');
+      } catch(e) {
+        setStatus(statusId, 'Copy failed — please use Ctrl+C.', 'err');
+      }
+      document.body.removeChild(ta);
     }
 
     // ── Syntax highlighter ───────────────────────────────────
@@ -433,23 +468,19 @@
     }
 
     function cpyInp() {
-      var v = document.getElementById('inp').value;
-      if (!v.trim()) { setStatus('st', 'Nothing to copy.'); return; }
-      navigator.clipboard.writeText(v).then(function() { setStatus('st', 'Input copied.', 'ok'); });
+      copyText(document.getElementById('inp').value, 'st');
     }
 
     function cpyOut() {
-      var v = outText();
-      if (!v.trim()) { setStatus('st2', 'Nothing to copy.'); return; }
-      navigator.clipboard.writeText(v).then(function() { setStatus('st2', 'Copied!', 'ok'); });
+      copyText(outText(), 'st2');
     }
 
     function miniOut() {
       var v = outText().trim();
       if (!v) { setStatus('st2', 'Nothing to minify.'); return; }
       try {
-        var m = JSON.stringify(JSON.parse(v));
-        navigator.clipboard.writeText(m).then(function() { setStatus('st2', 'Minified & copied!', 'ok'); });
+        copyText(JSON.stringify(JSON.parse(v)), 'st2');
+        setStatus('st2', 'Minified & copied!', 'ok');
       } catch(e) {
         setStatus('st2', 'Invalid JSON: ' + e.message, 'err');
       }
